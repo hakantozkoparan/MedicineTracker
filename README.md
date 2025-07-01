@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# MedicineTracker 💊
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+MedicineTracker, kullanıcıların ilaçlarını takip etmelerine, hatırlatmalar almalarına ve sağlık bilgilerini yönetmelerine olanak tanıyan bir mobil uygulamadır.
 
-## Get started
+## Özellikler
 
-1. Install dependencies
+- 🔐 Firebase kimlik doğrulama (Giriş, Kayıt, Şifre sıfırlama)
+- 💰 RevenueCat ile abonelik yönetimi
+- 🔔 İlaç hatırlatıcıları
+- 📊 İlaç kullanım takibi
+- 👤 Kullanıcı profil yönetimi
+- 🌓 Karanlık/Aydınlık tema desteği
+- 📱 iOS ve Android platformları için destek
 
+## Teknolojiler
+
+- React Native
+- Expo
+- Firebase Authentication
+- RevenueCat
+- TypeScript
+
+## Kurulum
+
+1. Depoyu klonlayın:
+   ```bash
+   git clone https://github.com/hakantozkoparan/MedicineTracker.git
+   cd MedicineTracker
+   ```
+
+2. Bağımlılıkları yükleyin:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. Uygulamayı başlatın:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Uygulama Yapısı
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+MedicineTracker/
+  - app/                   # Expo Router tabanlı ana uygulama
+  - components/            # Paylaşılan UI bileşenleri
+  - src/
+    - assets/              # Görseller, fontlar ve diğer statik dosyalar
+    - components/          # UI bileşenleri
+    - context/             # React context'leri
+    - hooks/               # Özel React hook'ları
+    - navigation/          # Navigasyon yapılandırması
+    - screens/             # Uygulama ekranları
+    - services/            # Firebase, RevenueCat gibi harici servisler
+    - styles/              # Tema ve stil tanımlamaları
+    - utils/               # Yardımcı fonksiyonlar
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Katkıda Bulunma
 
-## Learn more
+1. Bu depoyu fork edin
+2. Feature branch'i oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'Add some amazing feature'`)
+4. Branch'inize push edin (`git push origin feature/amazing-feature`)
+5. Pull Request oluşturun
 
-To learn more about developing your project with Expo, look at the following resources:
+## Lisans
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Bu proje [MIT lisansı](LICENSE) altında lisanslanmıştır.
 
-## Join the community
+## İletişim
 
-Join our community of developers creating universal apps.
+Hakan Tozkoparan - [@hakantozkoparan](https://github.com/hakantozkoparan)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Proje Linki: [https://github.com/hakantozkoparan/MedicineTracker](https://github.com/hakantozkoparan/MedicineTracker)
