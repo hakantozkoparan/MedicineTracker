@@ -14,7 +14,8 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 
 // Main App Screens
 import HomeScreen from '../screens/home/HomeScreen';
-import MedicineScreen from '../screens/medicine/MedicineScreen';
+import MedicineListScreen from '../screens/medicine/MedicineListScreen';
+import AddMedicineScreen from '../screens/medicine/AddMedicineScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Stack = createStackNavigator();
@@ -75,7 +76,7 @@ const MainTabs = () => (
     />
     <Tab.Screen 
       name="Medicine" 
-      component={MedicineScreen} 
+      component={MedicineListScreen} 
       options={{ tabBarLabel: 'İlaçlarım' }} 
     />
     <Tab.Screen 
@@ -94,7 +95,9 @@ const MainStack = () => (
       cardStyle: { backgroundColor: theme.colors.background },
     }}
   >
-    <Stack.Screen name="MainTabs" component={MainTabs} />
+    <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+    <Stack.Screen name="Medicine" component={MedicineListScreen} options={{ headerShown: true, title: 'İlaçlarım', headerTitleAlign: 'center', headerStyle: { backgroundColor: theme.colors.background }, headerTintColor: theme.colors.primary, headerTitleStyle: { fontFamily: customTheme.fontFamily.bold, fontSize: 22 } }} />
+    <Stack.Screen name="AddMedicine" component={AddMedicineScreen} options={{ headerShown: true, title: 'İlaç Ekle', headerBackTitle: 'Geri', headerTitleAlign: 'center', headerStyle: { backgroundColor: theme.colors.background }, headerTintColor: theme.colors.primary, headerTitleStyle: { fontFamily: customTheme.fontFamily.bold, fontSize: 22 } }} />
   </Stack.Navigator>
 );
 

@@ -7,7 +7,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Logo from '../../components/common/Logo';
 import { signIn } from '../../services/firebase';
-import { theme } from '../../styles/theme';
+import { theme, customTheme } from '../../styles/theme';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -141,9 +141,12 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
-    marginBottom: 24,
+    fontFamily: customTheme.fontFamily.bold,
+    color: theme.colors.primary,
+    lineHeight: 36,
+    marginBottom: 28,
     textAlign: 'center',
   },
   forgotPassword: {

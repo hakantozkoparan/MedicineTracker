@@ -222,28 +222,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Önce AsyncStorage'dan kullanıcı bilgilerini kontrol et
         const storedUser = await loadUserFromStorage();
         
-        if (storedUser) {
-          console.log('AsyncStorage\'dan kullanıcı bulundu, oturum açılıyor...');
-          setUser(storedUser);
-          
-          // Eğer auth.currentUser null ise, Firebase'e manuel olarak giriş yapalım
-          if (!auth.currentUser) {
-            console.log('Firebase auth.currentUser null, tekrar giriş yapılıyor...');
-            try {
-              // Firebase'e email/password ile giriş yapmaya çalışalım
-              // Not: Bu işlem için email ve password bilgisini saklamak gerekir
-              // Güvenlik açısından önerilmez, ancak bu durumda alternatif çözüm
-              
-              // Şimdilik sadece RevenueCat'i başlatalım
-              await initPurchases(storedUser.uid);
-            } catch (signInError) {
-              console.error('Firebase\'e tekrar giriş yapılamadı:', signInError);
-            }
-          } else {
-            await initPurchases(storedUser.uid);
+        // AsyncStorage'dan kullanıcı bulunsa bile, sadece Firebase Auth ile login olan kullanıcıya güven!
+        if (auth.currentUser) {
+          // Firestore'dan güncel kullanıcı bilgilerini al
+          const userData = await fetchUserData(auth.currentUser.uid);
+          if (userData) {
+            setUser(userData);
+            await saveUserToStorage(userData);
+            await initPurchases(auth.currentUser.uid);
           }
         } else {
-          console.log('AsyncStorage\'da kullanıcı bulunamadı');
+          setUser(null);
+          console.log('Kullanıcı oturumu kapalı, login ekranına yönlendirilecek');
         }
         
         // Firebase auth state'i dinle

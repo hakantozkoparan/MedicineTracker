@@ -95,48 +95,56 @@ const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: customTheme.spacing.m,
+    marginBottom: customTheme.spacing.l,
     width: '100%',
   },
   label: {
-    fontSize: 14,
-    marginBottom: 6,
+    fontSize: 15,
+    marginBottom: 8,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: customTheme.fontFamily.medium,
+    letterSpacing: 0.1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: theme.colors.border,
-    borderRadius: customTheme.borderRadius.m,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: customTheme.spacing.m,
-    height: 50,
+    borderRadius: customTheme.borderRadius.l,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: customTheme.spacing.l,
+    height: 56,
+    ...customTheme.shadows.small,
   },
   focusedInput: {
     borderColor: theme.colors.primary,
-    borderWidth: 1.5,
+    ...customTheme.shadows.medium,
   },
   errorInput: {
     borderColor: theme.colors.error,
+    ...customTheme.shadows.small,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     color: theme.colors.text,
     height: '100%',
+    fontFamily: customTheme.fontFamily.regular,
+    backgroundColor: 'transparent',
+    letterSpacing: 0.1,
   },
   icon: {
     marginRight: customTheme.spacing.s,
   },
   eyeIcon: {
-    padding: customTheme.spacing.xs,
+    padding: customTheme.spacing.s,
   },
   errorText: {
     color: theme.colors.error,
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 5,
+    fontFamily: customTheme.fontFamily.medium,
   },
 });
 

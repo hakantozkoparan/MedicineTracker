@@ -71,12 +71,15 @@ const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: 50,
-    borderRadius: customTheme.borderRadius.m,
+    height: 52,
+    borderRadius: customTheme.borderRadius.l,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: customTheme.spacing.l,
-    ...customTheme.shadows.small,
+    paddingHorizontal: customTheme.spacing.xl,
+    ...customTheme.shadows.medium,
+    flexDirection: 'row',
+    minHeight: 52,
+    minWidth: 120,
   },
   primaryButton: {
     backgroundColor: theme.colors.primary,
@@ -86,25 +89,31 @@ const styles = StyleSheet.create({
   },
   outlineButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: theme.colors.primary,
   },
   disabledButton: {
-    backgroundColor: '#BDBDBD',
-    borderColor: '#BDBDBD',
+    backgroundColor: '#E5E7EB',
+    borderColor: '#E5E7EB',
+    opacity: 0.7,
   },
   primaryText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: customTheme.fontFamily.bold,
+    letterSpacing: 0.2,
   },
   outlineText: {
     color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: customTheme.fontFamily.bold,
+    letterSpacing: 0.2,
   },
   disabledText: {
-    color: '#f5f5f5',
+    color: '#BDBDBD',
+    fontFamily: customTheme.fontFamily.medium,
   },
 });
 

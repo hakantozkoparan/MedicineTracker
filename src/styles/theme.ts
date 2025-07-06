@@ -7,96 +7,78 @@ export const { width, height } = Dimensions.get('window');
 // Özel tema renkleri ve ayarları
 const customColors = {
   light: {
-    primary: '#4C6EF5', // Ana renk (mavi)
-    secondary: '#7950F2', // İkincil renk (mor)
-    accent: '#FF922B', // Vurgu rengi (turuncu)
-    background: '#FFFFFF', // Arka plan rengi (beyaz)
-    surface: '#F8F9FA', // Yüzey rengi (açık gri)
-    text: '#212529', // Metin rengi (koyu gri)
-    error: '#FA5252', // Hata rengi (kırmızı)
-    success: '#40C057', // Başarı rengi (yeşil)
-    warning: '#FD7E14', // Uyarı rengi (turuncu)
-    info: '#339AF0', // Bilgi rengi (mavi)
-    placeholder: '#ADB5BD', // Placeholder rengi (orta gri)
-    border: '#DEE2E6', // Kenarlık rengi (açık gri)
+    primary: '#4ADE80', // Ana renk (açık yeşil)
+    secondary: '#22C55E', // İkincil renk (soft koyu yeşil)
+    accent: '#A7F3D0', // Vurgu rengi (çok açık yeşil)
+    background: '#F6FFF8', // Arka plan rengi (çok açık yeşil-beyaz)
+    surface: '#FFFFFF', // Yüzey rengi (beyaz)
+    text: '#1A2E05', // Metin rengi (koyu yeşil-gri)
+    error: '#F87171', // Hata rengi (soft kırmızı)
+    success: '#22C55E', // Başarı rengi (canlı yeşil)
+    warning: '#FBBF24', // Uyarı rengi (soft turuncu)
+    info: '#34D399', // Bilgi rengi (turkuaz-yeşil)
+    placeholder: '#A3A3A3', // Placeholder rengi (gri)
+    border: '#D1FAE5', // Kenarlık rengi (açık yeşil-gri)
     card: '#FFFFFF', // Kart arka plan rengi (beyaz)
-    notification: '#FA5252', // Bildirim rengi (kırmızı)
+    notification: '#F87171', // Bildirim rengi (soft kırmızı)
   },
   dark: {
-    primary: '#748FFC', // Ana renk (açık mavi)
-    secondary: '#9775FA', // İkincil renk (açık mor)
-    accent: '#FFA94D', // Vurgu rengi (açık turuncu)
-    background: '#121212', // Arka plan rengi (siyah)
-    surface: '#1E1E1E', // Yüzey rengi (koyu gri)
-    text: '#F8F9FA', // Metin rengi (beyaz)
-    error: '#FF6B6B', // Hata rengi (açık kırmızı)
-    success: '#51CF66', // Başarı rengi (açık yeşil)
-    warning: '#FF922B', // Uyarı rengi (açık turuncu)
-    info: '#4DABF7', // Bilgi rengi (açık mavi)
-    placeholder: '#868E96', // Placeholder rengi (orta gri)
-    border: '#343A40', // Kenarlık rengi (koyu gri)
-    card: '#1E1E1E', // Kart arka plan rengi (koyu gri)
-    notification: '#FF6B6B', // Bildirim rengi (açık kırmızı)
+    primary: '#22C55E', // Ana renk (canlı yeşil)
+    secondary: '#166534', // İkincil renk (koyu yeşil)
+    accent: '#065F46', // Vurgu rengi (çok koyu yeşil)
+    background: '#101F14', // Arka plan rengi (siyahımsı koyu yeşil)
+    surface: '#1E293B', // Yüzey rengi (koyu gri-yeşil)
+    text: '#F0FFF4', // Metin rengi (açık yeşil-beyaz)
+    error: '#F87171', // Hata rengi (soft kırmızı)
+    success: '#4ADE80', // Başarı rengi (açık yeşil)
+    warning: '#FBBF24', // Uyarı rengi (soft turuncu)
+    info: '#34D399', // Bilgi rengi (turkuaz-yeşil)
+    placeholder: '#64748B', // Placeholder rengi (gri-mavi)
+    border: '#334155', // Kenarlık rengi (koyu gri)
+    card: '#1E293B', // Kart arka plan rengi (koyu gri-yeşil)
+    notification: '#F87171', // Bildirim rengi (soft kırmızı)
   }
 };
 
 export const customTheme = {
+  fontFamily: {
+    regular: 'Inter', // veya 'Roboto', projenizde hangisi yüklüyse onu kullanabilirsiniz
+    medium: 'Inter-Medium',
+    bold: 'Inter-Bold',
+  },
   spacing: {
-    xs: 4,
+    xs: 6,
+    s: 12,
+    m: 20,
+    l: 32,
+    xl: 48,
+  },
+  borderRadius: {
     s: 8,
     m: 16,
     l: 24,
     xl: 32,
-    xxl: 48,
-  },
-  borderRadius: {
-    s: 4,
-    m: 8,
-    l: 16,
-    xl: 24,
-  },
-  fontSizes: {
-    s: 12,
-    m: 14,
-    l: 16,
-    xl: 18,
-    xxl: 20,
-    xxxl: 24,
-  },
-  fontWeights: {
-    normal: '400',
-    medium: '500',
-    bold: '700',
   },
   shadows: {
     small: {
       shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 1.41,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
       elevation: 2,
     },
     medium: {
       shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.23,
-      shadowRadius: 2.62,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.10,
+      shadowRadius: 8,
       elevation: 4,
     },
     large: {
       shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 4.65,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
       elevation: 8,
     },
   },
@@ -128,4 +110,4 @@ export const darkTheme = {
 export const theme = lightTheme;
 
 // Tema türü
-export type Theme = typeof theme; 
+export type Theme = typeof theme;
