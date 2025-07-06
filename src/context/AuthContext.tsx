@@ -18,6 +18,7 @@ interface User {
   email: string | null;
   fullName: string | null;
   isPremium: boolean;
+  role?: string;
   createdAt?: any;
   lastLoginAt?: any;
   devices?: UserDevice[];
@@ -108,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: auth.currentUser?.email || null,
           fullName: userData?.fullName || null,
           isPremium: userData?.isPremium || false,
+          role: userData?.role || 'member',
           createdAt: userData?.createdAt,
           lastLoginAt: userData?.lastLoginAt,
           devices: userData?.devices || [],

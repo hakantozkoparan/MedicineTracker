@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
+import AdminNotificationPanel from './AdminNotificationPanel';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +9,7 @@ import { customTheme, theme } from '../../styles/theme';
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   
   // Dynamic Island veya çentik için ekstra padding hesapla
   const topPadding = Platform.OS === 'ios' ? Math.max(20, insets.top) : 20;
@@ -36,68 +38,98 @@ const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
-      <ScrollView 
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding }]}
-      >
-        <View style={styles.userInfoContainer}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {user?.fullName?.charAt(0) || 'U'}
-            </Text>
+    <>
+      <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+        <ScrollView 
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding }]}
+        >
+          <View style={styles.userInfoContainer}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
+                {user?.fullName?.charAt(0) || 'U'}
+              </Text>
+            </View>
+            <Text style={styles.userName}>{user?.fullName || 'Kullanıcı'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'kullanici@ornek.com'}</Text>
+            
+            {!user?.isPremium && (
+              <TouchableOpacity 
+                style={styles.premiumButton}
+                onPress={handlePremium}
+              >
+                <Ionicons name="star" size={18} color="#fff" />
+                <Text style={styles.premiumButtonText}>Premium'a Geç</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={styles.userName}>{user?.fullName || 'Kullanıcı'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'kullanici@ornek.com'}</Text>
           
-          {!user?.isPremium && (
-            <TouchableOpacity 
-              style={styles.premiumButton}
-              onPress={handlePremium}
-            >
-              <Ionicons name="star" size={18} color="#fff" />
-              <Text style={styles.premiumButtonText}>Premium'a Geç</Text>
+          <View style={styles.menuContainer}>
+            {/* Admin ise Bildirim Gönder seçeneği */}
+            {(user?.role ?? '') === 'admin' && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => setShowNotificationPanel(true)}>
+                <Ionicons name="megaphone-outline" size={24} color={theme.colors.primary} />
+                <Text style={styles.menuItemText}>Bildirim Gönder</Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={styles.menuItem}>
+              <Ionicons name="person-outline" size={24} color={theme.colors.text} />
+              <Text style={styles.menuItemText}>Hesap Bilgileri</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
             </TouchableOpacity>
-          )}
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
+              <Text style={styles.menuItemText}>Bildirimler</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+              <Text style={styles.menuItemText}>Ayarlar</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Ionicons name="help-circle-outline" size={24} color={theme.colors.text} />
+              <Text style={styles.menuItemText}>Yardım ve Destek</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.menuItem, styles.signOutItem]}
+              onPress={handleSignOut}
+            >
+              <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
+              <Text style={[styles.menuItemText, styles.signOutText]}>Çıkış Yap</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.versionText}>Sürüm 1.0.0</Text>
+        </ScrollView>
+        {/* Bildirim Gönder Modalini burada tanımlayacağız */}
+      </SafeAreaView>
+      {/* Admin Bildirim Paneli Modal */}
+      {showNotificationPanel && (
+        <View style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99,
+        }}>
+          <View style={{ width: '90%', maxWidth: 400, backgroundColor: '#fff', borderRadius: 16, padding: 8 }}>
+            <AdminNotificationPanel />
+            <TouchableOpacity onPress={() => setShowNotificationPanel(false)} style={{ alignSelf: 'flex-end', marginTop: 8 }}>
+              <Text style={{ color: theme.colors.error, fontWeight: 'bold', fontSize: 16 }}>Kapat</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="person-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuItemText}>Hesap Bilgileri</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuItemText}>Bildirimler</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuItemText}>Ayarlar</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="help-circle-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuItemText}>Yardım ve Destek</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.menuItem, styles.signOutItem]}
-            onPress={handleSignOut}
-          >
-            <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
-            <Text style={[styles.menuItemText, styles.signOutText]}>Çıkış Yap</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <Text style={styles.versionText}>Sürüm 1.0.0</Text>
-      </ScrollView>
-    </SafeAreaView>
+      )}
+    </>
   );
 };
 
@@ -109,7 +141,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: customTheme.spacing.l,
-    paddingBottom: customTheme.spacing.xxl,
+    paddingBottom: customTheme.spacing.xl,
   },
   userInfoContainer: {
     alignItems: 'center',

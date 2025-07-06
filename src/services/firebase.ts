@@ -66,6 +66,7 @@ export const signUp = async (email: string, password: string, fullName: string) 
         await firestore.collection('users').doc(userCredential.user.uid).set({
           fullName,
           email,
+          role: 'member',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           isPremium: false,
           // Ek kullanıcı bilgileri
