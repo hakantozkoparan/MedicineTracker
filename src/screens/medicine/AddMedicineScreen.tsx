@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -20,6 +21,44 @@ const MEDICINE_TYPES = [
 ];
 
 const DOSE_PLACEHOLDER = 'Örn: 1.5, 2, 0.5';
+
+// Bildirim izni iste
+async function requestNotificationPermission() {
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status === 'granted';
+}
+
+// Belirli bir saat için local notification kur ve id döndür
+async function scheduleMedicineNotification(medicineName: string, date: Date): Promise<string | null> {
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'İlaç Hatırlatıcı',
+        body: `İlacı içmeyi unutma: ${medicineName}`,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: {
+        type: 'calendar',
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        repeats: true,
+      },
+    });
+    return id;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Bildirimleri topluca iptal et
+async function cancelMedicineNotifications(notificationIds: string[]) {
+  for (const id of notificationIds) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    } catch (e) {}
+  }
+}
 
 const AddMedicineScreen = () => {
   useEffect(() => {
@@ -117,11 +156,45 @@ const AddMedicineScreen = () => {
         createdAt: new Date().toISOString(),
       });
       // Başarılı
-      Alert.alert('Başarılı', 'İlaç başarıyla kaydedildi!');
-      // Reset
-      setMedicineName('');
-      // Anasayfaya (İlaçlarım sekmesine) dön
-      navigation.goBack();
+    // Bildirim izni al
+    const permission = await requestNotificationPermission();
+    let notificationIds: string[] = [];
+    if (!permission) {
+      Alert.alert(
+        'Bildirim İzni Gerekli',
+        'İlaç saatlerinde hatırlatma almak için uygulamaya bildirim izni vermelisiniz. Bildirim ayarlarından izin verebilirsiniz.'
+      );
+    } else if (isActive) {
+      for (const t of times) {
+        let notifDate = t instanceof Date ? t : new Date(t);
+        const notifId = await scheduleMedicineNotification(medicineName, notifDate);
+        if (notifId) notificationIds.push(notifId);
+      }
+    }
+    // Firestore'a notificationIds'i kaydet
+    await firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('medicines')
+      .where('medicineName', '==', medicineName.trim())
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get()
+      .then(snapshot => {
+        if (!snapshot.empty) {
+          const docId = snapshot.docs[0].id;
+          firestore.collection('users').doc(user.uid).collection('medicines').doc(docId).update({ notificationIds });
+        }
+      });
+    // Eğer isActive false ise bildirimleri iptal et
+    if (!isActive && notificationIds.length > 0) {
+      await cancelMedicineNotifications(notificationIds);
+    }
+    Alert.alert('Başarılı', 'İlaç başarıyla kaydedildi!');
+    // Reset
+    setMedicineName('');
+    // Anasayfaya (İlaçlarım sekmesine) dön
+    navigation.goBack();
     } catch (err) {
       console.log('Firestore hata:', err);
       Alert.alert('Hata', 'İlaç kaydedilirken bir sorun oluştu.');
