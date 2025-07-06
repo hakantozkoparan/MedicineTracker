@@ -98,6 +98,7 @@ const MainStack = () => (
     <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
     <Stack.Screen name="Medicine" component={MedicineListScreen} options={{ headerShown: true, title: 'İlaçlarım', headerTitleAlign: 'center', headerStyle: { backgroundColor: theme.colors.background }, headerTintColor: theme.colors.primary, headerTitleStyle: { fontFamily: customTheme.fontFamily.bold, fontSize: 22 } }} />
     <Stack.Screen name="AddMedicine" component={AddMedicineScreen} options={{ headerShown: true, title: 'İlaç Ekle', headerBackTitle: 'Geri', headerTitleAlign: 'center', headerStyle: { backgroundColor: theme.colors.background }, headerTintColor: theme.colors.primary, headerTitleStyle: { fontFamily: customTheme.fontFamily.bold, fontSize: 22 } }} />
+    <Stack.Screen name="EditMedicine" component={require('../screens/medicine/EditMedicineScreen').default} options={{ headerShown: true, title: 'İlaç Düzenle', headerBackTitle: 'Geri', headerTitleAlign: 'center', headerStyle: { backgroundColor: theme.colors.background }, headerTintColor: theme.colors.primary, headerTitleStyle: { fontFamily: customTheme.fontFamily.bold, fontSize: 22 } }} />
   </Stack.Navigator>
 );
 

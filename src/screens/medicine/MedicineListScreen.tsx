@@ -1,15 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { firestore } from '../../services/firebase';
+import { theme } from '../../styles/theme';
+
+type Medicine = {
+  id: string;
+  medicineName: string;
+  medicineType: string;
+  dose: string;
+  timesPerDay: number;
+  times: string[];
+  isActive: boolean;
+  isDeleted?: boolean;
+  [key: string]: any;
+};
 
 const MedicineListScreen = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const [medicines, setMedicines] = useState<any[]>([]);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,8 +34,22 @@ const MedicineListScreen = () => {
       .orderBy('createdAt', 'desc')
       .onSnapshot(
         (snapshot) => {
-          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setMedicines(data);
+          const data = snapshot.docs.map(doc => {
+            const d = doc.data();
+            return {
+              id: doc.id,
+              medicineName: d.medicineName || '',
+              medicineType: d.medicineType || '',
+              dose: d.dose || '',
+              timesPerDay: d.timesPerDay || 1,
+              times: d.times || [],
+              isActive: typeof d.isActive === 'boolean' ? d.isActive : true,
+              isDeleted: d.isDeleted === true,
+              ...d,
+            } as Medicine;
+          });
+          const filtered = data.filter(med => med.isDeleted !== true);
+          setMedicines(filtered);
           setLoading(false);
         },
         (error) => {
@@ -55,24 +82,61 @@ const MedicineListScreen = () => {
             renderItem={({ item }) => (
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                  {(() => {
-                    let typeIcon, typeIconColor = '#22c55e';
-                    switch ((item.medicineType || '').toLowerCase()) {
-                      case 'hap':
-                        typeIcon = <MaterialCommunityIcons name="pill" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
-                        break;
-                      case 'surup':
-                        typeIcon = <MaterialCommunityIcons name="bottle-soda" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
-                        break;
-                      case 'igne':
-                        typeIcon = <MaterialCommunityIcons name="needle" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
-                        break;
-                      default:
-                        typeIcon = <Ionicons name="medkit" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
-                    }
-                    return typeIcon;
-                  })()}
-                  <Text style={styles.title}>{item.medicineName}</Text>
+                  {/* Sol: Tip ikonu ve başlık */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    {(() => {
+                      let typeIcon, typeIconColor = '#22c55e';
+                      switch ((item.medicineType || '').toLowerCase()) {
+                        case 'hap':
+                          typeIcon = <MaterialCommunityIcons name="pill" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
+                          break;
+                        case 'surup':
+                          typeIcon = <MaterialCommunityIcons name="bottle-soda" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
+                          break;
+                        case 'igne':
+                          typeIcon = <MaterialCommunityIcons name="needle" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
+                          break;
+                        default:
+                          typeIcon = <Ionicons name="medkit" size={26} color={typeIconColor} style={{ marginRight: 10 }} />;
+                      }
+                      return typeIcon;
+                    })()}
+                    <Text style={styles.title}>{item.medicineName}</Text>
+                  </View>
+                  {/* Sağ: Düzenle butonu */}
+                  <TouchableOpacity
+                    style={{ marginLeft: 10, padding: 4 }}
+                    onPress={() => navigation.navigate('EditMedicine', { medicine: item })}
+                  >
+                    <MaterialCommunityIcons name="square-edit-outline" size={28} color={theme.colors.primary} accessibilityLabel="Düzenle" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ marginLeft: 8, padding: 4 }}
+                    onPress={() => {
+                      if (!user?.uid) return;
+                      Alert.alert(
+                        'İlaç Sil',
+                        'Bu ilacı silmek istediğinize emin misiniz?',
+                        [
+                          { text: 'İptal', style: 'cancel' },
+                          {
+                            text: 'Sil',
+                            style: 'destructive',
+                            onPress: async () => {
+                              await firestore
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('medicines')
+                                .doc(item.id)
+                                .update({ isDeleted: true });
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                  >
+                    <MaterialCommunityIcons name="trash-can-outline" size={26} color="#ef4444" accessibilityLabel="Sil" />
+                  </TouchableOpacity>
                 </View>
                 <View style={styles.cardRow}>
                   <Ionicons name="cube-outline" size={18} color="#22c55e" style={{ marginRight: 6 }} />
@@ -99,6 +163,11 @@ const MedicineListScreen = () => {
                       </View>
                     ))}
                   </View>
+                </View>
+                <View style={styles.cardRow}>
+                  <Ionicons name={item.isActive ? 'notifications' : 'notifications-off'} size={18} color={item.isActive ? '#22c55e' : '#888'} style={{ marginRight: 6 }} />
+                  <Text style={styles.label}>İlacı Kullanıyorum:</Text>
+                  <Text style={[styles.value, { color: item.isActive ? '#047857' : '#888' }]}>{item.isActive ? 'Evet' : 'Hayır'}</Text>
                 </View>
               </View>
             )}

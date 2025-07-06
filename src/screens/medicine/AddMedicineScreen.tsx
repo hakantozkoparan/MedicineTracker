@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import ActiveSwitch from '../../components/common/ActiveSwitch';
 import { useAuth } from '../../context/AuthContext';
 import { auth, firestore } from '../../services/firebase';
 import { customTheme, theme } from '../../styles/theme';
@@ -27,6 +28,7 @@ const AddMedicineScreen = () => {
   const [medicineName, setMedicineName] = useState('');
   const [medicineType, setMedicineType] = useState('hap');
   const [dose, setDose] = useState('');
+  const [isActive, setIsActive] = useState(true);
   const [timesPerDay, setTimesPerDay] = useState(1);
   const [times, setTimes] = useState([new Date()]);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -79,6 +81,26 @@ const AddMedicineScreen = () => {
       Alert.alert('Eksik Bilgi', 'Lütfen ilaç adını girin.');
       return;
     }
+    if (!medicineType) {
+      Alert.alert('Eksik Bilgi', 'Lütfen ilaç türünü seçin.');
+      return;
+    }
+    if (!dose.trim()) {
+      Alert.alert('Eksik Bilgi', 'Lütfen doz bilgisini girin.');
+      return;
+    }
+    if (!timesPerDay || timesPerDay < 1) {
+      Alert.alert('Eksik Bilgi', 'Günde kaç kez alınacağını belirtin.');
+      return;
+    }
+    if (!Array.isArray(times) || times.length !== timesPerDay || times.some(t => !(t instanceof Date) || isNaN(t.getTime()))) {
+      Alert.alert('Eksik Bilgi', 'Tüm saatleri doğru şekilde seçin.');
+      return;
+    }
+    if (typeof isActive !== 'boolean') {
+      Alert.alert('Eksik Bilgi', 'Bildirim tercihini seçin.');
+      return;
+    }
     if (!user?.uid) {
       Alert.alert('Kullanıcı bulunamadı', 'Lütfen tekrar giriş yapın.');
       return;
@@ -91,6 +113,7 @@ const AddMedicineScreen = () => {
         dose,
         timesPerDay,
         times: times.map(t => t instanceof Date ? t.toISOString() : t),
+        isActive,
         createdAt: new Date().toISOString(),
       });
       // Başarılı
@@ -124,55 +147,58 @@ const AddMedicineScreen = () => {
               value={medicineName}
               onChangeText={setMedicineName}
             />
-            <View style={[styles.pickerContainer, {flexDirection: 'column', alignItems: 'flex-start'}]}>
+            <View style={[styles.pickerContainer, { flexDirection: 'column', alignItems: 'flex-start' }]}> 
               <ThemedText style={styles.label}>İlaç Türü</ThemedText>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                {MEDICINE_TYPES.map((type) => {
-                  let iconName = 'pill';
-                  if (type.value === 'igne') iconName = 'needle';
-                  if (type.value === 'surup') iconName = 'bottle-soda';
-                  if (type.value === 'diger') iconName = 'dots-horizontal-circle';
-                  const isSelected = medicineType === type.value;
-                  return (
-                    <TouchableOpacity
-                      key={type.value}
-                      onPress={() => setMedicineType(type.value)}
-                      style={{
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 12,
-                        padding: 10,
-                        borderRadius: 12,
-                        borderWidth: isSelected ? 2 : 1,
-                        borderColor: isSelected ? theme.colors.primary : theme.colors.border,
-                        backgroundColor: isSelected ? theme.colors.primary : theme.colors.surface,
-                        minWidth: 64,
-                        minHeight: 64,
-                      }}
-                    >
-                      <MaterialCommunityIcons
-                        name={iconName as any}
-                        size={28}
-                        color={isSelected ? '#fff' : theme.colors.primary}
-                      />
-                      <ThemedText style={{ color: isSelected ? '#fff' : theme.colors.primary, fontWeight: isSelected ? 'bold' : 'normal', marginTop: 6 }}>
-                        {type.label}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              {MEDICINE_TYPES.map((type) => {
+                let iconName = 'pill';
+                if (type.value === 'igne') iconName = 'needle';
+                if (type.value === 'surup') iconName = 'bottle-soda';
+                if (type.value === 'diger') iconName = 'dots-horizontal-circle';
+                const isSelected = medicineType === type.value;
+                return (
+                  <TouchableOpacity
+                    key={type.value}
+                    onPress={() => setMedicineType(type.value)}
+                    style={{
+                      backgroundColor: isSelected ? '#bbf7d0' : '#f0fdf4',
+                      borderColor: isSelected ? '#22c55e' : '#ccc',
+                      borderWidth: 1.5,
+                      borderRadius: 8,
+                      padding: 8,
+                      marginRight: 8,
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                    }}
+                  >
+                    <MaterialCommunityIcons name={iconName as any} size={20} color={isSelected ? '#22c55e' : '#aaa'} style={{ marginRight: 4 }} />
+                    <ThemedText style={{ color: isSelected ? '#047857' : '#666', fontWeight: 'bold', fontSize: 15 }}>{type.label}</ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <Input
-              label="Doz"
-              placeholder={DOSE_PLACEHOLDER}
-              value={dose}
-              onChangeText={setDose}
-              keyboardType="numeric"
-            />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+  <ThemedText style={styles.label}>Doz</ThemedText>
+  <TouchableOpacity onPress={() => Alert.alert('Doz Bilgisi', 'Aldığınız ilacın miktarını belirtiniz. Örneğin bir hapı yarım alıyorsanız 0.5, tam alıyorsanız 1, bir buçuk alıyorsanız 1.5 gibi yazabilirsiniz. Şurup veya sıvı ilaçlarda mililitre cinsinden de belirtebilirsiniz.')}
+    style={{ marginLeft: 6, padding: 2 }}>
+    <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
+  </TouchableOpacity>
+</View>
+<Input
+  placeholder={DOSE_PLACEHOLDER}
+  value={dose}
+  onChangeText={setDose}
+  keyboardType="numeric"
+/>
             <View style={styles.pickerContainer}>
-              <ThemedText style={styles.label}>Günde Kaç Kez</ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+  <ThemedText style={styles.label}>Günde Kaç Kez</ThemedText>
+  <TouchableOpacity onPress={() => Alert.alert('Günde Kaç Kez?', 'Bu ilacı bir günde kaç kez aldığınızı belirtiniz. Örneğin sabah ve akşam alıyorsanız 2, sadece sabah alıyorsanız 1 yazabilirsiniz. Her doz için ayrı saat seçebilirsiniz.')}
+    style={{ marginLeft: 6, padding: 2 }}>
+    <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
+  </TouchableOpacity>
+</View>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                 {[1,2,3,4,5,6].map((v) => {
                   const isSelected = timesPerDay === v;
@@ -199,7 +225,13 @@ const AddMedicineScreen = () => {
                 })}
               </View>
             </View>
-            <ThemedText style={styles.label}>Saatler</ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+  <ThemedText style={styles.label}>Saatler</ThemedText>
+  <TouchableOpacity onPress={() => Alert.alert('Saatler', 'İlacı her aldığınız zamanı ekleyin. Örneğin sabah 08:00 ve akşam 20:00 gibi. Her doz için uygun saatleri seçerek hatırlatıcılarınızı kişiselleştirebilirsiniz.')}
+    style={{ marginLeft: 6, padding: 2 }}>
+    <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
+  </TouchableOpacity>
+</View>
             {times.map((time, idx) => (
               <View key={idx} style={[styles.timeRow, { alignItems: 'center', marginBottom: 10 }]}>  
                 <ThemedText style={{ fontSize: 16, minWidth: 110, color: theme.colors.text }}>{`${idx + 1}. Doz Saati`}</ThemedText>
@@ -234,6 +266,17 @@ const AddMedicineScreen = () => {
             pickerContainerStyleIOS={{ alignItems: 'center', justifyContent: 'center' }}
             customHeaderIOS={() => <View style={{ height: 16 }} />}
           />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+            <ActiveSwitch
+              value={isActive}
+              onValueChange={setIsActive}
+              label="İlacı Kullanıyorum"
+            />
+            <TouchableOpacity onPress={() => Alert.alert('Bilgi', 'Bu alan açıkken bildirim almaya devam edersiniz. İlacı kullanmayı bitirdiğinizde bu anahtarı pasif hale getirebilirsiniz.')}
+              style={{ marginLeft: 6, padding: 2 }}>
+              <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
           <Button
             title="Kaydet"
             onPress={handleSave}
