@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { collection, query, where, getDocs, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '../../services/firebase';
@@ -16,9 +17,8 @@ const AdminNotificationPanel = () => {
     }
     setLoading(true);
     try {
-      const usersSnapshot = await firestore.collection('users')
-        .where('expoPushToken', '!=', null)
-        .get();
+      const q = query(collection(firestore, 'users'), where('expoPushToken', '!=', null));
+const usersSnapshot = await getDocs(q);
       const tokens = usersSnapshot.docs.map(doc => doc.data().expoPushToken).filter(Boolean);
       if (tokens.length === 0) {
         Alert.alert('Bildirim Yok', 'Hiçbir kullanıcıda push token yok.');

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DeviceInfo } from '../services/device';
 import { auth, firestore } from '../services/firebase';
+import { doc, updateDoc, getDoc, FirestoreError } from 'firebase/firestore';
 import { initPurchases, logOutPurchases } from '../services/purchases';
 
 // AsyncStorage için key tanımları
@@ -100,9 +101,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserData = async (uid: string) => {
     try {
       console.log('Firestore\'dan kullanıcı verileri alınıyor...');
-      const userDoc = await firestore.collection('users').doc(uid).get();
+      const userRef = doc(firestore, 'users', uid);
+const userDoc = await getDoc(userRef);
       
-      if (userDoc.exists) {
+      if (userDoc.exists()) {
         const userData = userDoc.data() as Partial<User>;
         const user = {
           uid,
@@ -163,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth.currentUser || !user) return;
     
     try {
-      const userRef = firestore.collection('users').doc(auth.currentUser.uid);
+      const userRef = doc(firestore, 'users', auth.currentUser.uid);
       
       // Güncellenecek alanları hazırla
       const updateData: Partial<User> = {};
@@ -190,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Firestore'da güncelle
-      await userRef.update(updateData);
+      await updateDoc(userRef, updateData);
       
       // Lokal state'i güncelle
       const updatedUser = { ...user, ...updateData };

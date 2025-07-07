@@ -1,7 +1,19 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import {
+  getFirestore,
+  setDoc,
+  getDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc
+} from 'firebase/firestore';
 import { DeviceInfo, getDeviceInfo } from './device';
 
 // Firebase yapılandırması
@@ -15,30 +27,10 @@ const firebaseConfig = {
   measurementId: "G-0HN1MLE4FH"
 };
 
-// React Native için AsyncStorage adapter'ı
-const reactNativePersistence = (firebase as any).auth.ReactNativeAsyncStorage;
-if (reactNativePersistence) {
-  reactNativePersistence.setAsyncStorage(AsyncStorage);
-}
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const firestore = getFirestore(app);
 
-// Firebase'i başlat
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-export const auth = firebase.auth();
-
-// React Native ortamında persistence ayarını kaldır
-// auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
-export const firestore = firebase.firestore();
-
-// Firestore ayarları
-firestore.settings({
-  cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-  ignoreUndefinedProperties: true,
-  merge: true
-});
 
 // Hata yakalama fonksiyonu
 const handleFirestoreError = (error: any, operation: string) => {
@@ -54,7 +46,7 @@ const handleFirestoreError = (error: any, operation: string) => {
 // Authentication işlemleri
 export const signUp = async (email: string, password: string, fullName: string) => {
   try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
     // Cihaz bilgilerini al
     const deviceInfo = await getDeviceInfo();
@@ -63,14 +55,13 @@ export const signUp = async (email: string, password: string, fullName: string) 
     // Kullanıcı profili oluştur
     if (userCredential.user) {
       try {
-        await firestore.collection('users').doc(userCredential.user.uid).set({
+        await setDoc(doc(firestore, 'users', userCredential.user.uid), {
           fullName,
           email,
           role: 'member',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
           isPremium: false,
-          // Ek kullanıcı bilgileri
-          lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
           devices: [{
             ...deviceInfo,
             lastUsedAt: now,
@@ -99,7 +90,7 @@ export const signUp = async (email: string, password: string, fullName: string) 
 
 export const signIn = async (email: string, password: string) => {
   try {
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     
     // Cihaz bilgilerini al
     const deviceInfo = await getDeviceInfo();
@@ -108,12 +99,12 @@ export const signIn = async (email: string, password: string) => {
     // Kullanıcı son giriş bilgisini güncelle
     if (userCredential.user) {
       try {
-        const userRef = firestore.collection('users').doc(userCredential.user.uid);
-        const userDoc = await userRef.get();
+        const userRef = doc(firestore, 'users', userCredential.user.uid);
+        const userDoc = await getDoc(userRef);
         
-        if (userDoc.exists) {
+        if (userDoc.exists()) {
           const userData = userDoc.data();
-          const devices = userData?.devices || [];
+          let devices = userData?.devices || [];
           
           // Cihazın daha önce kullanılıp kullanılmadığını kontrol et
           const deviceIndex = devices.findIndex(
@@ -140,8 +131,8 @@ export const signIn = async (email: string, password: string) => {
           }
           
           // Kullanıcı dokümanını güncelle
-          await userRef.update({
-            lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+          await updateDoc(userRef, {
+            lastLoginAt: serverTimestamp(),
             devices: devices
           });
         }
@@ -163,10 +154,10 @@ export const signOut = async () => {
     if (auth.currentUser) {
       try {
         const deviceInfo = await getDeviceInfo();
-        const userRef = firestore.collection('users').doc(auth.currentUser.uid);
-        const userDoc = await userRef.get();
+        const userRef = doc(firestore, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
         
-        if (userDoc.exists) {
+        if (userDoc.exists()) {
           const userData = userDoc.data();
           const devices = userData?.devices || [];
           
@@ -179,7 +170,7 @@ export const signOut = async () => {
             }
           );
           
-          await userRef.update({ devices: updatedDevices });
+          await updateDoc(userRef, { devices: updatedDevices });
         }
       } catch (firestoreError) {
         // Firestore hatası durumunda sadece loglama yap, çıkış işlemine devam et
@@ -195,10 +186,8 @@ export const signOut = async () => {
 
 export const resetPassword = async (email: string) => {
   try {
-    await auth.sendPasswordResetEmail(email);
+    await sendPasswordResetEmail(auth, email);
   } catch (error) {
     handleFirestoreError(error, 'şifre sıfırlama');
   }
 };
-
-export default firebase; 

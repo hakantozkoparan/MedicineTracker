@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { collection, onSnapshot, doc, updateDoc, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import { Platform, ScrollView, StyleSheet, Text, View, Switch, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -27,11 +28,8 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsubscribe = firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('medicines')
-      .onSnapshot(snapshot => {
+    const medRef = collection(firestore, 'users', user.uid, 'medicines');
+const unsubscribe = onSnapshot(medRef, snapshot => {
         const data = snapshot.docs.map(doc => {
           const d = doc.data();
           return {
@@ -94,12 +92,8 @@ const HomeScreen = () => {
                     value={med.isActive}
                     onValueChange={async (val: boolean) => {
                       if (!user?.uid) return;
-                      await firestore
-                        .collection('users')
-                        .doc(user.uid)
-                        .collection('medicines')
-                        .doc(med.id)
-                        .update({ isActive: val });
+                      const medDocRef = doc(firestore, 'users', user.uid, 'medicines', med.id);
+                      await updateDoc(medDocRef, { isActive: val });
                     }}
                     thumbColor={med.isActive ? '#22c55e' : '#ccc'}
                     trackColor={{ false: '#ccc', true: '#bbf7d0' }}

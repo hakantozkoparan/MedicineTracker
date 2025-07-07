@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -27,13 +28,9 @@ const MedicineListScreen = () => {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsubscribe = firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('medicines')
-      .orderBy('createdAt', 'desc')
-      .onSnapshot(
-        (snapshot) => {
+    const medRef = collection(firestore, 'users', user.uid, 'medicines');
+const q = query(medRef, orderBy('createdAt', 'desc'));
+const unsubscribe = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(doc => {
             const d = doc.data();
             return {
@@ -124,11 +121,8 @@ const MedicineListScreen = () => {
                             style: 'destructive',
                             onPress: async () => {
                               await firestore
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('medicines')
-                                .doc(item.id)
-                                .update({ isDeleted: true });
+                                const medDocRef = doc(firestore, 'users', user.uid, 'medicines', item.id);
+await updateDoc(medDocRef, { isDeleted: true });
                             },
                           },
                         ]

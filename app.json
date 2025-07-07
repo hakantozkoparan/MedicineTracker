@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hakantozkoparan00.MedicineTracker",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,7 +43,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "medicine-tracker-18e8d"
+        "projectId": "3ff0644c-c424-4ff4-bf50-f8fd7c5291d5"
       }
     }
   }

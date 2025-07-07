@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { doc, updateDoc, FirestoreError } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -106,19 +107,15 @@ const EditMedicineScreen = () => {
       return;
     }
     try {
-      await firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('medicines')
-        .doc(medicine.id)
-        .update({
-          medicineName: medicineName.trim(),
-          medicineType,
-          dose,
-          timesPerDay,
-          times: times.map(t => t instanceof Date ? t.toISOString() : t),
-          isActive,
-        });
+      const medDocRef = doc(firestore, 'users', user.uid, 'medicines', medicine.id);
+      await updateDoc(medDocRef, {
+        medicineName: medicineName.trim(),
+        medicineType,
+        dose,
+        timesPerDay,
+        times: times.map(t => t instanceof Date ? t.toISOString() : t),
+        isActive,
+      });
       Alert.alert('Başarılı', 'İlaç başarıyla güncellendi!');
       navigation.goBack();
     } catch (err) {

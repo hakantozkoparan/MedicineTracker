@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
+import { collection, addDoc, doc, updateDoc, query, where, orderBy, limit, getDocs, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
@@ -146,7 +147,8 @@ const AddMedicineScreen = () => {
     }
     try {
       console.log('Firestore kayıt:', { uid: user.uid, medicineName });
-      await firestore.collection('users').doc(user.uid).collection('medicines').add({
+      const medRef = collection(firestore, 'users', user.uid, 'medicines');
+      await addDoc(medRef, {
         medicineName: medicineName.trim(),
         medicineType,
         dose,
@@ -172,20 +174,13 @@ const AddMedicineScreen = () => {
       }
     }
     // Firestore'a notificationIds'i kaydet
-    await firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('medicines')
-      .where('medicineName', '==', medicineName.trim())
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get()
-      .then(snapshot => {
-        if (!snapshot.empty) {
-          const docId = snapshot.docs[0].id;
-          firestore.collection('users').doc(user.uid).collection('medicines').doc(docId).update({ notificationIds });
-        }
-      });
+    const q = query(collection(firestore, 'users', user.uid, 'medicines'), where('medicineName', '==', medicineName.trim()), orderBy('createdAt', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const docId = querySnapshot.docs[0].id;
+      const medDocRef = doc(firestore, 'users', user.uid, 'medicines', docId);
+      await updateDoc(medDocRef, { notificationIds });
+    }
     // Eğer isActive false ise bildirimleri iptal et
     if (!isActive && notificationIds.length > 0) {
       await cancelMedicineNotifications(notificationIds);
