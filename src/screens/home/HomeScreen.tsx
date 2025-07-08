@@ -1,11 +1,12 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, doc, updateDoc, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
-import { Platform, ScrollView, StyleSheet, Text, View, Switch, TouchableOpacity, Alert } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { firestore } from '../../services/firebase';
 import { customTheme, theme } from '../../styles/theme';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Medicine tipi
  type Medicine = {
@@ -25,32 +26,61 @@ const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (!user?.uid) return;
-    const medRef = collection(firestore, 'users', user.uid, 'medicines');
-const unsubscribe = onSnapshot(medRef, snapshot => {
-        const data = snapshot.docs.map(doc => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            medicineName: d.medicineName || '',
-            medicineType: d.medicineType || '',
-            dose: d.dose || '',
-            timesPerDay: d.timesPerDay || 1,
-            times: d.times || [],
-            isActive: typeof d.isActive === 'boolean' ? d.isActive : true,
-            isDeleted: d.isDeleted === true,
-            ...d,
-          } as Medicine;
-        });
-        // Sadece aktif ve silinmemiş olanlar
-        const filtered = data.filter(med => med.isActive && med.isDeleted !== true);
-        setMedicines(filtered);
-        setLoading(false);
-      }, () => setLoading(false));
-    return () => unsubscribe();
-  }, [user]);
+    
+    console.log('Ana sayfa ilaç listesi yükleniyor, kullanıcı ID:', user.uid);
+    
+    const loadMedicines = () => {
+      const medRef = collection(firestore, 'users', user.uid, 'medicines');
+      
+      return onSnapshot(medRef, 
+        snapshot => {
+          const data = snapshot.docs.map(doc => {
+            const d = doc.data();
+            return {
+              id: doc.id,
+              medicineName: d.medicineName || '',
+              medicineType: d.medicineType || '',
+              dose: d.dose || '',
+              timesPerDay: d.timesPerDay || 1,
+              times: d.times || [],
+              isActive: typeof d.isActive === 'boolean' ? d.isActive : true,
+              isDeleted: d.isDeleted === true,
+              ...d,
+            } as Medicine;
+          });
+          // Sadece aktif ve silinmemiş olanlar
+          const filtered = data.filter(med => med.isActive && med.isDeleted !== true);
+          console.log(`Ana sayfada ${filtered.length} aktif ilaç yüklendi`);
+          setMedicines(filtered);
+          setLoading(false);
+        }, 
+        (error) => {
+          console.error('Ana sayfa ilaç listesi yüklenirken hata:', error);
+          setLoading(false);
+        }
+      );
+    };
+    
+    // İlaç listesini yükle
+    const unsubscribe = loadMedicines();
+    
+    // Ekran odaklandığında verileri yenile
+    const focusListener = navigation.addListener('focus', () => {
+      console.log('HomeScreen odaklandı, veriler yenileniyor');
+      setLoading(true);
+      // Mevcut aboneliği iptal etmeye gerek yok, sadece yeni bir snapshot alıyoruz
+      loadMedicines();
+    });
+    
+    return () => {
+      unsubscribe();
+      focusListener();
+    };
+  }, [user, navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'right', 'left', 'bottom']}>

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, QuerySnapshot, QueryDocumentSnapshot, FirestoreError } from 'firebase/firestore';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { firestore } from '../../services/firebase';
 import { theme } from '../../styles/theme';
@@ -28,9 +28,15 @@ const MedicineListScreen = () => {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const medRef = collection(firestore, 'users', user.uid, 'medicines');
-const q = query(medRef, orderBy('createdAt', 'desc'));
-const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    console.log('İlaç listesi yükleniyor, kullanıcı ID:', user.uid);
+    
+    const loadMedicines = () => {
+      const medRef = collection(firestore, 'users', user.uid, 'medicines');
+      const q = query(medRef, orderBy('createdAt', 'desc'));
+      
+      return onSnapshot(q, 
+        (snapshot) => {
           const data = snapshot.docs.map(doc => {
             const d = doc.data();
             return {
@@ -46,15 +52,33 @@ const unsubscribe = onSnapshot(q, (snapshot) => {
             } as Medicine;
           });
           const filtered = data.filter(med => med.isDeleted !== true);
+          console.log(`${filtered.length} ilaç yüklendi`);
           setMedicines(filtered);
           setLoading(false);
         },
         (error) => {
+          console.error('İlaç listesi yüklenirken hata:', error);
           setLoading(false);
         }
       );
-    return () => unsubscribe();
-  }, [user]);
+    };
+    
+    // İlaç listesini yükle
+    const unsubscribe = loadMedicines();
+    
+    // Ekran odaklandığında verileri yenile
+    const focusListener = navigation.addListener('focus', () => {
+      console.log('MedicineListScreen odaklandı, veriler yenileniyor');
+      setLoading(true);
+      // Mevcut aboneliği iptal etmeye gerek yok, sadece yeni bir snapshot alıyoruz
+      loadMedicines();
+    });
+    
+    return () => {
+      unsubscribe();
+      focusListener();
+    };
+  }, [user, navigation]);
 
   if (loading) {
     return (
