@@ -1,14 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { DeviceInfo } from '../services/device';
+import { DeviceInfo, getDeviceInfo } from '../services/device';
 import { auth, firestore } from '../services/firebase';
 import { initPurchases, logOutPurchases } from '../services/purchases';
 
 // AsyncStorage için key tanımları
 const USER_AUTH_KEY = '@MedicineTracker:user_auth';
-const USER_CREDENTIALS_KEY = '@MedicineTracker:user_credentials'; // Email ve şifre için
+const SECURE_EMAIL_KEY = 'MedicineTracker_secure_email';
+const SECURE_PASSWORD_KEY = 'MedicineTracker_secure_password';
 
 interface UserDevice extends DeviceInfo {
   lastUsedAt: any;
@@ -48,6 +50,8 @@ interface User {
 interface AuthContextProps {
   user: User | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
@@ -56,6 +60,8 @@ interface AuthContextProps {
 const AuthContext = createContext<AuthContextProps>({
   user: null,
   loading: true,
+  signIn: async () => {},
+  signUp: async () => {},
   signOut: async () => {},
   refreshUserData: async () => {},
   updateUserProfile: async () => {},
@@ -66,33 +72,28 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isExpoGo, setIsExpoGo] = useState(false);
 
-  // Kullanıcı kimlik bilgilerini AsyncStorage'a kaydet (sadece Expo Go için)
+  // Kullanıcı kimlik bilgilerini SecureStore'a kaydet (her ortam için)
   const saveCredentialsToStorage = async (email: string, password: string) => {
     try {
-      if (__DEV__) {
-        await AsyncStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify({ email, password }));
-        console.log('Kullanıcı kimlik bilgileri AsyncStorage\'a kaydedildi (sadece geliştirme ortamı için)');
-      }
+      await SecureStore.setItemAsync(SECURE_EMAIL_KEY, email);
+      await SecureStore.setItemAsync(SECURE_PASSWORD_KEY, password);
     } catch (error) {
-      console.error('AsyncStorage kimlik bilgileri kayıt hatası:', error);
+      console.error('Kimlik bilgileri kayıt hatası:', error);
     }
   };
 
-  // Kullanıcı kimlik bilgilerini AsyncStorage'dan al (sadece Expo Go için)
+  // Kullanıcı kimlik bilgilerini SecureStore'dan al (her ortam için)
   const loadCredentialsFromStorage = async () => {
     try {
-      if (__DEV__) {
-        const credentialsString = await AsyncStorage.getItem(USER_CREDENTIALS_KEY);
-        if (credentialsString) {
-          console.log('Kullanıcı kimlik bilgileri AsyncStorage\'dan yüklendi (sadece geliştirme ortamı için)');
-          return JSON.parse(credentialsString);
-        }
+      const email = await SecureStore.getItemAsync(SECURE_EMAIL_KEY);
+      const password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY);
+      if (email && password) {
+        return { email, password };
       }
       return null;
     } catch (error) {
-      console.error('AsyncStorage kimlik bilgileri okuma hatası:', error);
+      console.error('Kimlik bilgileri okuma hatası:', error);
       return null;
     }
   };
@@ -105,10 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Kullanıcı AsyncStorage\'a kaydedildi');
       } else {
         await AsyncStorage.removeItem(USER_AUTH_KEY);
-        // Expo Go için kimlik bilgilerini de temizle
-        if (__DEV__) {
-          await AsyncStorage.removeItem(USER_CREDENTIALS_KEY);
-        }
+        // Kimlik bilgilerini SecureStore'dan da temizleyebiliriz, ancak genellikle çıkışta buna gerek kalmaz,
+        // yeni girişte üzerine yazılır. Güvenlik nedeniyle temizlemek isterseniz:
+        // await SecureStore.deleteItemAsync(SECURE_EMAIL_KEY);
+        // await SecureStore.deleteItemAsync(SECURE_PASSWORD_KEY);
         console.log('Kullanıcı AsyncStorage\'dan silindi');
       }
     } catch (error) {
@@ -196,6 +197,63 @@ const userDoc = await getDoc(userRef);
     }
   };
 
+  // Yeni Giriş Fonksiyonu
+  const handleSignIn = async (email: string, password: string): Promise<void> => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      await saveCredentialsToStorage(email, password);
+      // onAuthStateChanged tetiklenecek ve kullanıcı verilerini alacak
+    } catch (error) {
+      console.error('Giriş hatası (AuthContext):', error);
+      throw error; // Hatanın UI'da gösterilmesi için tekrar fırlat
+    }
+  };
+
+  // Yeni Kayıt Fonksiyonu
+  const handleSignUp = async (email: string, password: string, fullName: string): Promise<void> => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const { user } = userCredential;
+
+      // Firestore'da kullanıcı belgesi oluştur
+      const userRef = doc(firestore, 'users', user.uid);
+      const deviceInfo = await getDeviceInfo();
+
+      const newUser: User = {
+        uid: user.uid,
+        email: user.email,
+        fullName: fullName,
+        isPremium: false,
+        role: 'member',
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+        devices: [{ ...deviceInfo, lastUsedAt: new Date(), isCurrentDevice: true, firstUsedAt: new Date() }],
+        preferences: {
+          notificationsEnabled: true,
+          reminderSound: 'default',
+          darkMode: false,
+          language: 'tr',
+        },
+        medicalInfo: {
+          allergies: [],
+          conditions: [],
+          bloodType: '',
+          emergencyContact: { name: '', phone: '', relationship: '' },
+        },
+      };
+
+      await setDoc(userRef, newUser);
+      await saveCredentialsToStorage(email, password);
+      
+      setUser(newUser); // State'i hemen güncelle
+      await saveUserToStorage(newUser); // AsyncStorage'a kaydet
+
+    } catch (error) {
+      console.error('Kayıt hatası (AuthContext):', error);
+      throw error; // Hatanın UI'da gösterilmesi için tekrar fırlat
+    }
+  };
+
   // Kullanıcı profilini güncelle
   const updateUserProfile = async (data: Partial<User>) => {
     if (!auth.currentUser || !user) return;
@@ -247,6 +305,8 @@ const userDoc = await getDoc(userRef);
     try {
       await logOutPurchases();
       await saveUserToStorage(null); // AsyncStorage'dan kullanıcı bilgilerini sil
+      await SecureStore.deleteItemAsync(SECURE_EMAIL_KEY);
+      await SecureStore.deleteItemAsync(SECURE_PASSWORD_KEY);
       await auth.signOut();
       setUser(null); // Kullanıcıyı state'den de kaldır
     } catch (error) {
@@ -254,89 +314,32 @@ const userDoc = await getDoc(userRef);
     }
   };
 
-  // Expo Go'da Firebase'e yeniden giriş yapmak için
-  const reSignInWithStoredCredentials = async () => {
-    try {
-      if (__DEV__) {
-        const credentials = await loadCredentialsFromStorage();
-        if (credentials && credentials.email && credentials.password) {
-          console.log('Kaydedilmiş kimlik bilgileriyle yeniden giriş yapılıyor...');
-          const result = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
-          console.log('Yeniden giriş başarılı');
-          return result;
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('Yeniden giriş yapılırken hata:', error);
-      return null;
-    }
-  };
-
   // Kimlik doğrulama durumu değişikliklerini dinle
   useEffect(() => {
-    // Expo Go kontrolü
-    const checkIfExpoGo = async () => {
-      const constants = await import('expo-constants');
-      const isExpo = constants.default.executionEnvironment === 'storeClient';
-      setIsExpoGo(isExpo);
-      console.log('Uygulama Expo Go\'da çalışıyor:', isExpo);
-      return isExpo;
-    };
-
     const initializeAuth = async () => {
       try {
         console.log('Auth başlatılıyor...');
         setLoading(true);
-        
-        // Expo Go kontrolü
-        const isExpo = await checkIfExpoGo();
-        
-        // Önce Firebase Auth durumunu kontrol et
-        if (auth.currentUser) {
-          console.log('Firebase oturumu aktif, kullanıcı verileri yükleniyor');
-          // Firestore'dan güncel kullanıcı bilgilerini al
-          const userData = await fetchUserData(auth.currentUser.uid);
-          if (userData) {
-            setUser(userData);
-            await saveUserToStorage(userData);
-            await initPurchases(auth.currentUser.uid);
-          }
-        } else {
-          // Firebase oturumu yoksa, AsyncStorage'dan kontrol et
-          const storedUser = await loadUserFromStorage();
-          if (storedUser) {
-            console.log('AsyncStorage\'dan kullanıcı bulundu, oturum yenileniyor');
-            
-            // Kullanıcı bilgilerini state'e set et
-            setUser(storedUser);
-            
-            // RevenueCat'i başlat
-            if (storedUser.uid) {
-              await initPurchases(storedUser.uid);
-            }
-            
-            // Expo Go'da Firebase oturumunun kalıcı olmaması sorununu çözmek için
-            if (isExpo) {
-              console.log('Expo Go\'da çalışıyor, Firebase oturumunu yenilemeye çalışılıyor...');
-              const result = await reSignInWithStoredCredentials();
-              if (result) {
-                console.log('Firebase oturumu başarıyla yenilendi');
-              } else {
-                console.log('Firebase oturumu yenilenemedi, kullanıcı giriş ekranına yönlendirilecek');
-                setUser(null);
-              }
-            }
-          } else {
-            setUser(null);
-            console.log('Kullanıcı oturumu kapalı, login ekranına yönlendirilecek');
+
+        // Firebase oturumu yoksa, cihazda saklanan email/şifre ile tekrar giriş yapmayı dene
+        const credentials = await loadCredentialsFromStorage();
+        if (credentials && credentials.email && credentials.password) {
+          try {
+            console.log('Kaydedilmiş kimlik bilgileriyle yeniden giriş yapılıyor...');
+            await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+            console.log('Otomatik giriş başarılı.');
+            // onAuthStateChanged geri kalanı halledecek
+          } catch (err) {
+            console.log('Otomatik giriş başarısız, muhtemelen şifre değişmiş:', err);
+            // Kimlik bilgileri artık geçerli değilse temizle
+            await handleSignOut();
           }
         }
         
         // Firebase auth state'i dinle
         const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
           try {
-            console.log('Auth state değişti:', authUser ? 'Kullanıcı var' : 'Kullanıcı yok');
+            console.log('Auth state değişti:', authUser ? `Kullanıcı var: ${authUser.uid}` : 'Kullanıcı yok');
             
             if (authUser) {
               // Firestore'dan güncel kullanıcı bilgilerini al
@@ -344,14 +347,20 @@ const userDoc = await getDoc(userRef);
               
               if (userData) {
                 setUser(userData);
+                await saveUserToStorage(userData); // Oturum açıldığında da kaydet
                 
                 // RevenueCat'i başlat
                 await initPurchases(authUser.uid);
+              } else {
+                // Firebase'de kullanıcı var ama Firestore'da yoksa (kayıt tamamlanmamış olabilir)
+                // Bu durumda oturumu kapatıp kullanıcıyı temizlemek en güvenlisi
+                 console.log('Firebase kullanıcısı var ama Firestore verisi yok. Oturum kapatılıyor.');
+                 await handleSignOut();
               }
             } else {
-              // Kullanıcı oturumu kapatmışsa, AsyncStorage'ı temizle
-              await saveUserToStorage(null);
+              // Kullanıcı oturumu kapatmışsa, state'i ve storage'ı temizle
               setUser(null);
+              await saveUserToStorage(null);
               console.log('Kullanıcı oturumu kapatıldı');
             }
           } catch (error) {
@@ -361,7 +370,10 @@ const userDoc = await getDoc(userRef);
           }
         });
         
-        return () => unsubscribe();
+        return () => {
+          console.log('Auth listener temizleniyor.');
+          unsubscribe();
+        };
       } catch (error) {
         console.error('Kimlik doğrulama başlatılırken hata oluştu:', error);
         setLoading(false);
@@ -374,6 +386,8 @@ const userDoc = await getDoc(userRef);
   const value = {
     user,
     loading,
+    signIn: handleSignIn,
+    signUp: handleSignUp,
     signOut: handleSignOut,
     refreshUserData,
     updateUserProfile,

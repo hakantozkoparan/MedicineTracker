@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -7,23 +6,8 @@ import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Logo from '../../components/common/Logo';
-import { signIn } from '../../services/firebase';
+import { useAuth } from '../../context/AuthContext';
 import { customTheme, theme } from '../../styles/theme';
-
-// AsyncStorage için key tanımı
-const USER_CREDENTIALS_KEY = '@MedicineTracker:user_credentials';
-
-// Kullanıcı kimlik bilgilerini AsyncStorage'a kaydet (sadece geliştirme ortamı için)
-const saveCredentialsToStorage = async (email: string, password: string) => {
-  try {
-    if (__DEV__) {
-      await AsyncStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify({ email, password }));
-      console.log('Kullanıcı kimlik bilgileri AsyncStorage\'a kaydedildi (sadece geliştirme ortamı için)');
-    }
-  } catch (error) {
-    console.error('AsyncStorage kimlik bilgileri kayıt hatası:', error);
-  }
-};
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -33,6 +17,7 @@ const LoginScreen = () => {
   
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { signIn } = useAuth();
   
   const handleLogin = async () => {
     if (!email || !password) {
@@ -45,12 +30,6 @@ const LoginScreen = () => {
     
     try {
       await signIn(email, password);
-      
-      // Expo Go için kimlik bilgilerini kaydet (sadece geliştirme ortamında)
-      if (__DEV__) {
-        await saveCredentialsToStorage(email, password);
-      }
-      
       // Başarılı giriş - AuthContext tarafından yönlendirme yapılacak
     } catch (err: any) {
       // Hata mesajını kullanıcı dostu hale getir
